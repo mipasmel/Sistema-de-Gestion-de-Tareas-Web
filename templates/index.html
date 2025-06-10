@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h1>Gestor de Tareas</h1>
+
+    <form action="{{ url_for('add_task') }}" method="post" class="add-task-form">
+        <input type="text" name="task_description" placeholder="Añadir nueva tarea..." required>
+        <input type="date" name="due_date" title="Fecha de vencimiento">
+        <select name="priority" title="Prioridad de la tarea">
+            <option value="Baja">Baja</option>
+            <option value="Media" selected>Media</option>
+            <option value="Alta">Alta</option>
+        </select>
+        <button type="submit">Añadir</button>
+    </form>
+
+    <div class="filters-sort">
+        <form action="{{ url_for('index') }}" method="get" class="filter-form">
+            <label for="status_filter">Estado:</label>
+            <select name="status_filter" id="status_filter" onchange="this.form.submit()">
+                <option value="all" {% if status_filter == 'all' %}selected{% endif %}>Todas</option>
+                <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pendientes</option>
+                <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completadas</option>
+            </select>
+
+            <label for="sort_by">Ordenar por:</label>
+            <select name="sort_by" id="sort_by" onchange="this.form.submit()">
+                <option value="id_desc" {% if sort_by == 'id_desc' %}selected{% endif %}>Recientes primero</option>
+                <option value="due_date_asc" {% if sort_by == 'due_date_asc' %}selected{% endif %}>Fecha (asc)</option>
+                <option value="due_date_desc" {% if sort_by == 'due_date_desc' %}selected{% endif %}>Fecha (desc)</option>
+                <option value="priority_desc" {% if sort_by == 'priority_desc' %}selected{% endif %}>Prioridad (Alta primero)</option>
+                <option value="priority_asc" {% if sort_by == 'priority_asc' %}selected{% endif %}>Prioridad (Baja primero)</option>
+            </select>
+        </form>
+    </div>
+
+
+    <ul class="task-list">
+        {% for task in tasks %}
+            <li class="{{ 'completed' if task.status == 'completed' else '' }} priority-{{ task.priority | lower }}">
+                <div class="task-info">
+                    <span>{{ task.task_description }}</span>
+                    {% if task.due_date %}
+                        <span class="due-date">Vence: {{ task.due_date }}</span>
+                    {% endif %}
+                    <span class="priority">Prioridad: {{ task.priority }}</span>
+                </div>
+                <div class="actions">
+                    <a href="{{ url_for('edit_task', task_id=task.id) }}" class="button edit">Editar</a>
+                    {% if task.status == 'pending' %}
+                        <a href="{{ url_for('complete_task', task_id=task.id) }}" class="button complete">Completar</a>
+                    {% endif %}
+                    <a href="{{ url_for('delete_task', task_id=task.id) }}" class="button delete">Eliminar</a>
+                </div>
+            </li>
+        {% else %}
+            <li>No hay tareas aún. ¡Añade una!</li>
+        {% endfor %}
+    </ul>
+{% endblock %}

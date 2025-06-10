@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h1>Editar Tarea</h1>
+
+    <form action="{{ url_for('update_task', task_id=task.id) }}" method="post" class="edit-task-form">
+        <label for="task_description">Descripción:</label>
+        <input type="text" id="task_description" name="task_description" value="{{ task.task_description }}" required>
+
+        <label for="due_date">Fecha de Vencimiento:</label>
+        <input type="date" id="due_date" name="due_date" value="{{ task.due_date }}">
+
+        <label for="priority">Prioridad:</label>
+        <select id="priority" name="priority">
+            <option value="Baja" {% if task.priority == 'Baja' %}selected{% endif %}>Baja</option>
+            <option value="Media" {% if task.priority == 'Media' %}selected{% endif %}>Media</option>
+            <option value="Alta" {% if task.priority == 'Alta' %}selected{% endif %}>Alta</option>
+        </select>
+
+        <label for="status">Estado:</label>
+        <select id="status" name="status">
+            <option value="pending" {% if task.status == 'pending' %}selected{% endif %}>Pendiente</option>
+            <option value="completed" {% if task.status == 'completed' %}selected{% endif %}>Completada</option>
+        </select>
+
+        <button type="submit">Guardar Cambios</button>
+        <a href="{{ url_for('index') }}" class="button cancel">Cancelar</a>
+    </form>
+{% endblock %}
