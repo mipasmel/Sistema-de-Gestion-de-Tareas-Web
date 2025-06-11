@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 
-# Inicializar la base de datos si no existe
-# Render ejecuta esto cada vez que el servicio se inicia.
-# SQLite solo creará la tabla si no existe, así que es seguro.
-python -c "from app import app, init_db; with app.app_context(): init_db()"
+# Inicializar la base de datos
+python init_db.py # Llama al nuevo script Python
 
 # Iniciar Gunicorn
 gunicorn app:app -w 4 --bind 0.0.0.0:$PORT
