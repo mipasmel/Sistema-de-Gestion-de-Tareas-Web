@@ -1,60 +1,201 @@
-{% extends 'base.html' %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor de Tareas Colaborativo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col items-center py-8 px-4">
+    <div class="container bg-white p-8 rounded-lg shadow-xl w-full max-w-4xl">
+        <h1 class="text-4xl font-bold text-gray-800 mb-4 text-center">Gestor de Tareas Colaborativo</h1>
+        <p class="text-gray-600 text-center mb-8">Tu ID de Usuario: <span id="user-id-display" class="font-semibold text-blue-700">{{ current_user_id }}</span></p>
 
-{% block content %}
-    <h1>Gestor de Tareas</h1>
+        <!-- Mensajes Flash -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="mb-6">
+                    {% for category, message in messages %}
+                        <div class="p-3 mb-2 rounded-md {% if category == 'success' %}bg-green-100 text-green-800{% elif category == 'error' %}bg-red-100 text-red-800{% elif category == 'info' %}bg-blue-100 text-blue-800{% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
 
-    <form action="{{ url_for('add_task') }}" method="post" class="add-task-form">
-        <input type="text" name="task_description" placeholder="Añadir nueva tarea..." required>
-        <input type="date" name="due_date" title="Fecha de vencimiento">
-        <select name="priority" title="Prioridad de la tarea">
-            <option value="Baja">Baja</option>
-            <option value="Media" selected>Media</option>
-            <option value="Alta">Alta</option>
-        </select>
-        <button type="submit">Añadir</button>
-    </form>
-
-    <div class="filters-sort">
-        <form action="{{ url_for('index') }}" method="get" class="filter-form">
-            <label for="status_filter">Estado:</label>
-            <select name="status_filter" id="status_filter" onchange="this.form.submit()">
-                <option value="all" {% if status_filter == 'all' %}selected{% endif %}>Todas</option>
-                <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pendientes</option>
-                <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completadas</option>
-            </select>
-
-            <label for="sort_by">Ordenar por:</label>
-            <select name="sort_by" id="sort_by" onchange="this.form.submit()">
-                <option value="id_desc" {% if sort_by == 'id_desc' %}selected{% endif %}>Recientes primero</option>
-                <option value="due_date_asc" {% if sort_by == 'due_date_asc' %}selected{% endif %}>Fecha (asc)</option>
-                <option value="due_date_desc" {% if sort_by == 'due_date_desc' %}selected{% endif %}>Fecha (desc)</option>
-                <option value="priority_desc" {% if sort_by == 'priority_desc' %}selected{% endif %}>Prioridad (Alta primero)</option>
-                <option value="priority_asc" {% if sort_by == 'priority_asc' %}selected{% endif %}>Prioridad (Baja primero)</option>
-            </select>
+        <!-- Formulario para añadir tareas -->
+        <form action="{{ url_for('add_task') }}" method="post" class="bg-gray-50 p-6 rounded-lg mb-8 shadow-sm">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Añadir Nueva Tarea</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div class="md:col-span-2">
+                    <label for="task_description" class="block text-sm font-medium text-gray-700 mb-1">Descripción de la Tarea:</label>
+                    <input type="text" id="task_description" name="task_description" required
+                           class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Ej: Comprar víveres">
+                </div>
+                <div>
+                    <label for="due_date" class="block text-sm font-medium text-gray-700 mb-1">Fecha de Vencimiento:</label>
+                    <input type="date" id="due_date" name="due_date"
+                           class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div>
+                    <label for="priority" class="block text-sm font-medium text-gray-700 mb-1">Prioridad:</label>
+                    <select id="priority" name="priority"
+                            class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        <option value="Baja">Baja</option>
+                        <option value="Media">Media</option>
+                        <option value="Alta">Alta</option>
+                    </select>
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" id="is_public" name="is_public" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <label for="is_public" class="ml-2 block text-sm text-gray-900">Compartir públicamente</label>
+                </div>
+            </div>
+            <button type="submit"
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md shadow-md transition duration-300 ease-in-out">
+                Añadir Tarea
+            </button>
         </form>
+
+        <!-- Opciones de Filtrado, Ordenación y Vista -->
+        <div class="bg-gray-50 p-6 rounded-lg mb-8 shadow-sm">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Opciones de Vista</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div>
+                    <label for="view_mode" class="block text-sm font-medium text-gray-700 mb-1">Ver Tareas:</label>
+                    <select id="view_mode"
+                            class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                            onchange="if(this.value === 'my_tasks') { window.location.href = '{{ url_for('index', status_filter=status_filter, sort_by=sort_by) }}'; } else { document.getElementById('shared_user_id_group').classList.remove('hidden'); }">
+                        <option value="my_tasks" {% if not view_shared_user_id %}selected{% endif %}>Mis Tareas</option>
+                        <option value="shared_tasks" {% if view_shared_user_id %}selected{% endif %}>Tareas Compartidas de Otros</option>
+                    </select>
+                </div>
+                <div id="shared_user_id_group" class="{% if not view_shared_user_id %}hidden{% endif %}">
+                    <label for="shared_user_id" class="block text-sm font-medium text-gray-700 mb-1">ID de Usuario a Compartir:</label>
+                    <div class="flex space-x-2">
+                        <input type="text" id="shared_user_id" name="shared_user_id"
+                            value="{{ view_shared_user_id }}"
+                            placeholder="Pega el ID aquí"
+                            class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        <button type="button" onclick="applySharedUserFilter()"
+                            class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-md shadow-md transition duration-300 ease-in-out">
+                            Ver
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap justify-between items-center mt-4">
+                <div class="mb-4 md:mb-0">
+                    <label for="status_filter" class="block text-sm font-medium text-gray-700 mb-1">Filtrar por Estado:</label>
+                    <select id="status_filter" onchange="applyFilters()"
+                            class="mt-1 block w-full md:w-auto px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        <option value="all" {% if status_filter == 'all' %}selected{% endif %}>Todas</option>
+                        <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pendientes</option>
+                        <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completadas</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="sort_by" class="block text-sm font-medium text-gray-700 mb-1">Ordenar por:</label>
+                    <select id="sort_by" onchange="applyFilters()"
+                            class="mt-1 block w-full md:w-auto px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        <option value="id_desc" {% if sort_by == 'id_desc' %}selected{% endif %}>Más Recientes</option>
+                        <option value="due_date_asc" {% if sort_by == 'due_date_asc' %}selected{% endif %}>Fecha de Vencimiento (Asc)</option>
+                        <option value="due_date_desc" {% if sort_by == 'due_date_desc' %}selected{% endif %}>Fecha de Vencimiento (Desc)</option>
+                        <option value="priority_desc" {% if sort_by == 'priority_desc' %}selected{% endif %}>Prioridad (Alta a Baja)</option>
+                        <option value="priority_asc" {% if sort_by == 'priority_asc' %}selected{% endif %}>Prioridad (Baja a Alta)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista de Tareas -->
+        <h2 class="text-2xl font-semibold text-gray-700 mb-4">Tareas de: {{ display_user_id }}</h2>
+        {% if tasks %}
+            <div class="space-y-4">
+                {% for task in tasks %}
+                    <div class="bg-white p-6 rounded-lg shadow-md flex flex-col md:flex-row justify-between items-start md:items-center border {% if task.status == 'completed' %}border-green-400 bg-green-50{% else %}border-gray-200{% endif %}">
+                        <div class="flex-grow mb-4 md:mb-0">
+                            <p class="text-xl font-semibold {% if task.status == 'completed' %}text-gray-500 line-through{% else %}text-gray-800{% endif %}">{{ task.task_description }}</p>
+                            <p class="text-sm text-gray-600">Estado: <span class="font-medium {% if task.status == 'completed' %}text-green-600{% else %}text-orange-600{% endif %}">{{ task.status|capitalize }}</span></p>
+                            <p class="text-sm text-gray-600">Vencimiento: {{ task.due_date if task.due_date else 'N/A' }}</p>
+                            <p class="text-sm text-gray-600">Prioridad:
+                                <span class="font-medium
+                                    {% if task.priority == 'Alta' %}text-red-600{% elif task.priority == 'Media' %}text-yellow-600{% else %}text-blue-600{% endif %}">
+                                    {{ task.priority }}
+                                </span>
+                            </p>
+                            <p class="text-sm text-gray-500 mt-2">
+                                Creado por: {{ 'Tú' if task.createdBy == current_user_id else task.createdBy }}
+                                ({{ 'Público' if task.isPublic == 1 else 'Privado' }})
+                            </p>
+                        </div>
+                        <!-- Botones de acción, solo visibles si son tareas del usuario actual y no se están viendo tareas de otro -->
+                        {% if not is_viewing_others_tasks and task.createdBy == current_user_id %}
+                            <div class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 w-full md:w-auto">
+                                {% if task.status == 'pending' %}
+                                    <a href="{{ url_for('complete_task', task_id=task.id) }}"
+                                       class="bg-green-500 hover:bg-green-600 text-white text-center font-bold py-2 px-4 rounded-md shadow-md transition duration-300 ease-in-out">
+                                        Completar
+                                    </a>
+                                {% endif %}
+                                <a href="{{ url_for('edit_task', task_id=task.id) }}"
+                                   class="bg-blue-500 hover:bg-blue-600 text-white text-center font-bold py-2 px-4 rounded-md shadow-md transition duration-300 ease-in-out">
+                                    Editar
+                                </a>
+                                <a href="{{ url_for('delete_task', task_id=task.id) }}"
+                                   onclick="return confirm('¿Estás seguro de que quieres eliminar esta tarea?');"
+                                   class="bg-red-500 hover:bg-red-600 text-white text-center font-bold py-2 px-4 rounded-md shadow-md transition duration-300 ease-in-out">
+                                    Eliminar
+                                </a>
+                                <a href="{{ url_for('toggle_public_status', task_id=task.id) }}"
+                                   class="{% if task.isPublic == 1 %}bg-purple-700 hover:bg-purple-800{% else %}bg-purple-500 hover:bg-purple-600{% endif %} text-white text-center font-bold py-2 px-4 rounded-md shadow-md transition duration-300 ease-in-out">
+                                    {% if task.isPublic == 1 %}Hacer Privada{% else %}Hacer Pública{% endif %}
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-gray-600 text-center text-lg mt-8">No hay tareas para mostrar en esta vista.</p>
+        {% endif %}
     </div>
 
+    <script>
+        // Función para aplicar los filtros y la ordenación
+        function applyFilters() {
+            const statusFilter = document.getElementById('status_filter').value;
+            const sortBy = document.getElementById('sort_by').value;
+            const sharedUserId = document.getElementById('shared_user_id').value;
+            let url = `/?status_filter=<span class="math-inline">\{statusFilter\}&sort\_by\=</span>{sortBy}`;
+            if (sharedUserId) {
+                url += `&view_shared_user_id=${sharedUserId}`;
+            }
+            window.location.href = url;
+        }
 
-    <ul class="task-list">
-        {% for task in tasks %}
-            <li class="{{ 'completed' if task.status == 'completed' else '' }} priority-{{ task.priority | lower }}">
-                <div class="task-info">
-                    <span>{{ task.task_description }}</span>
-                    {% if task.due_date %}
-                        <span class="due-date">Vence: {{ task.due_date }}</span>
-                    {% endif %}
-                    <span class="priority">Prioridad: {{ task.priority }}</span>
-                </div>
-                <div class="actions">
-                    <a href="{{ url_for('edit_task', task_id=task.id) }}" class="button edit">Editar</a>
-                    {% if task.status == 'pending' %}
-                        <a href="{{ url_for('complete_task', task_id=task.id) }}" class="button complete">Completar</a>
-                    {% endif %}
-                    <a href="{{ url_for('delete_task', task_id=task.id) }}" class="button delete">Eliminar</a>
-                </div>
-            </li>
-        {% else %}
-            <li>No hay tareas aún. ¡Añade una!</li>
-        {% endfor %}
-    </ul>
-{% endblock %}
+        // Función para aplicar el filtro de usuario compartido
+        function applySharedUserFilter() {
+            document.getElementById('view_mode').value = 'shared_tasks';
+            applyFilters();
+        }
+
+        // Ocultar el grupo de ID de usuario compartido si la vista es "Mis Tareas" al cargar
+        document.addEventListener('DOMContentLoaded', () => {
+            const viewModeSelect = document.getElementById('view_mode');
+            const sharedUserIdGroup = document.getElementById('shared_user_id_group');
+            if (viewModeSelect.value === 'my_tasks') {
+                sharedUserIdGroup.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
