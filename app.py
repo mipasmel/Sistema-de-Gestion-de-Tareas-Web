@@ -16,7 +16,7 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'tu_clave_super_secreta_
 # --- Configuración de Flask-Login ---
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'login'
+login_manager.login_view = 'login' # La ruta a la que redirigir si se requiere autenticación
 
 class User(UserMixin):
     """Clase de usuario para Flask-Login."""
@@ -26,6 +26,7 @@ class User(UserMixin):
         self.password_hash = password_hash
 
     def get_id(self):
+        # Aseguramos que el ID se devuelve como cadena, como espera Flask-Login
         return str(self.id)
 
 @login_manager.user_loader
@@ -35,9 +36,9 @@ def load_user(user_id):
     Esta función es utilizada por Flask-Login para recargar al usuario de la sesión.
     """
     db = get_db()
-    # Usar el cursor explícitamente y %s como placeholder para PostgreSQL
     cursor = db.cursor()
-    cursor.execute('SELECT id, username, password_hash FROM users WHERE id = %s', (user_id,))
+    # Los IDs de usuario en la DB son enteros, así que convertimos user_id a int
+    cursor.execute('SELECT id, username, password_hash FROM users WHERE id = %s', (int(user_id),))
     user_data = cursor.fetchone()
     cursor.close()
     if user_data:
@@ -142,7 +143,7 @@ def register():
         cursor.close()
         flash('Registro exitoso. ¡Ahora puedes iniciar sesión!', 'success')
         return redirect(url_for('login'))
-    return render_template('register.html')
+    return render_template('login.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -185,8 +186,9 @@ def index():
     
     status_filter = request.args.get('status_filter', 'all')
     sort_by = request.args.get('sort_by', 'id_desc')
+    # Convertimos view_shared_user_id a int solo si no está vacío, para la consulta SQL
     view_shared_user_id = request.args.get('view_shared_user_id', '').strip()
-
+    
     query_parts = []
     params = []
     display_user_id_for_title = ""
@@ -195,14 +197,15 @@ def index():
     # Unir la tabla de tareas con la tabla de usuarios para obtener el nombre de usuario
     query_base = 'SELECT t.id, t.task_description, t.status, t.due_date, t.priority, t.createdBy, t.isPublic, u.username as createdByUsername FROM tasks t JOIN users u ON t.createdBy = u.id'
 
+    # Corrección: current_user.id es una cadena, task.createdBy es un entero. Convertimos a entero para la comparación.
     if view_shared_user_id and view_shared_user_id != str(current_user.id):
         # Si se proporciona un ID de otro usuario, filtrar por ese ID y que sean públicas
         query_parts.append(' WHERE t.createdBy = %s AND t.isPublic = 1')
-        params.append(view_shared_user_id)
+        params.append(int(view_shared_user_id)) # Convertir a int para la consulta SQL
         
         # Obtener el nombre de usuario del ID compartido para mostrar en el título
         cursor = db.cursor()
-        cursor.execute('SELECT username FROM users WHERE id = %s', (view_shared_user_id,))
+        cursor.execute('SELECT username FROM users WHERE id = %s', (int(view_shared_user_id),)) # Convertir a int
         other_user = cursor.fetchone()
         cursor.close()
         other_username = other_user['username'] if other_user else view_shared_user_id
@@ -211,7 +214,7 @@ def index():
     else:
         # Mostrar las tareas del usuario actualmente logeado
         query_parts.append(' WHERE t.createdBy = %s')
-        params.append(current_user.id)
+        params.append(current_user.id) # current_user.id se pasa como str a psycopg2, que lo maneja bien para INTEGER
         display_user_id_for_title = f"Mis Tareas ({current_user.username})"
         is_viewing_others_tasks = False
 
@@ -237,7 +240,7 @@ def index():
     final_query = query_base + "".join(query_parts)
     
     cursor = db.cursor()
-    cursor.execute(final_query, tuple(params)) # Los parámetros deben ser una tupla
+    cursor.execute(final_query, tuple(params))
     tasks = cursor.fetchall()
     cursor.close()
     
@@ -275,6 +278,7 @@ def add_task():
 
         db = get_db()
         cursor = db.cursor()
+        # current_user.id es una cadena, psycopg2 lo manejará correctamente para INTEGER
         cursor.execute('INSERT INTO tasks (task_description, due_date, priority, createdBy, isPublic) VALUES (%s, %s, %s, %s, %s)',
                        (task_description, due_date, priority, current_user.id, is_public))
         db.commit()
@@ -287,7 +291,8 @@ def add_task():
 def edit_task(task_id):
     db = get_db()
     cursor = db.cursor()
-    cursor.execute('SELECT id, task_description, status, due_date, priority, createdBy, isPublic FROM tasks WHERE id = %s AND createdBy = %s', (task_id, current_user.id))
+    # Corrección: Convertir current_user.id a int para la comparación
+    cursor.execute('SELECT id, task_description, status, due_date, priority, createdBy, isPublic FROM tasks WHERE id = %s AND createdBy = %s', (task_id, int(current_user.id)))
     task = cursor.fetchone()
     cursor.close()
     if task is None:
@@ -323,7 +328,8 @@ def update_task(task_id):
         cursor.execute('SELECT createdBy FROM tasks WHERE id = %s', (task_id,))
         task = cursor.fetchone()
         
-        if task and task['createdBy'] == current_user.id:
+        # Corrección: Convertir current_user.id a int para la comparación
+        if task and task['createdBy'] == int(current_user.id):
             cursor.execute('UPDATE tasks SET task_description = %s, due_date = %s, priority = %s, status = %s, isPublic = %s WHERE id = %s',
                            (task_description, due_date, priority, status, is_public, task_id))
             db.commit()
@@ -341,7 +347,8 @@ def complete_task(task_id):
     cursor.execute('SELECT createdBy FROM tasks WHERE id = %s', (task_id,))
     task = cursor.fetchone()
 
-    if task and task['createdBy'] == current_user.id:
+    # Corrección: Convertir current_user.id a int para la comparación
+    if task and task['createdBy'] == int(current_user.id):
         cursor.execute('UPDATE tasks SET status = %s WHERE id = %s', ('completed', task_id))
         db.commit()
         flash('Tarea marcada como completada.', 'success')
@@ -358,7 +365,8 @@ def delete_task(task_id):
     cursor.execute('SELECT createdBy FROM tasks WHERE id = %s', (task_id,))
     task = cursor.fetchone()
 
-    if task and task['createdBy'] == current_user.id:
+    # Corrección: Convertir current_user.id a int para la comparación
+    if task and task['createdBy'] == int(current_user.id):
         cursor.execute('DELETE FROM tasks WHERE id = %s', (task_id,))
         db.commit()
         flash('Tarea eliminada correctamente.', 'success')
@@ -375,7 +383,8 @@ def toggle_public_status(task_id):
     cursor.execute('SELECT createdBy, isPublic FROM tasks WHERE id = %s', (task_id,))
     task = cursor.fetchone()
 
-    if task and task['createdBy'] == current_user.id:
+    # Corrección: Convertir current_user.id a int para la comparación
+    if task and task['createdBy'] == int(current_user.id):
         new_public_status = 1 if task['isPublic'] == 0 else 0 # Alternar el estado
         cursor.execute('UPDATE tasks SET isPublic = %s WHERE id = %s', (new_public_status, task_id))
         db.commit()
