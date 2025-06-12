@@ -10,10 +10,18 @@
         body { font-family: 'Inter', sans-serif; }
     </style>
 </head>
-<body class="bg-gray-100 flex flex-col items-center py-8 px-4">
+<body class="bg-gray-100 flex flex-col items-center py-8 px-4 min-h-screen">
     <div class="container bg-white p-8 rounded-lg shadow-xl w-full max-w-4xl">
         <h1 class="text-4xl font-bold text-gray-800 mb-4 text-center">Gestor de Tareas Colaborativo</h1>
-        <p class="text-gray-600 text-center mb-8">Tu ID de Usuario: <span id="user-id-display" class="font-semibold text-blue-700">{{ current_user_id }}</span></p>
+
+        <div class="mb-6 text-center">
+            {% if current_user.is_authenticated %}
+                <p class="text-gray-600">Bienvenido, <span class="font-semibold text-blue-700">{{ current_user.username }}</span> (ID: <span class="font-semibold text-blue-700">{{ current_user.id }}</span>)</p>
+                <a href="{{ url_for('logout') }}" class="text-blue-500 hover:underline">Cerrar Sesión</a>
+            {% else %}
+                <p class="text-gray-600">Por favor, <a href="{{ url_for('login') }}" class="text-blue-500 hover:underline">inicia sesión</a> o <a href="{{ url_for('register') }}" class="text-blue-500 hover:underline">regístrate</a>.</p>
+            {% endif %}
+        </div>
 
         <!-- Mensajes Flash -->
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -77,8 +85,8 @@
                         <option value="shared_tasks" {% if view_shared_user_id %}selected{% endif %}>Tareas Compartidas de Otros</option>
                     </select>
                 </div>
-                <div id="shared_user_id_group" class="{% if not view_shared_user_id %}hidden{% endif %}">
-                    <label for="shared_user_id" class="block text-sm font-medium text-gray-700 mb-1">ID de Usuario a Compartir:</label>
+                <div id="shared_user_id_group" class="{% if not view_shared_user_id %}hidden{% endif %} md:col-span-2">
+                    <label for="shared_user_id" class="block text-sm font-medium text-gray-700 mb-1">ID de Usuario para ver sus tareas públicas:</label>
                     <div class="flex space-x-2">
                         <input type="text" id="shared_user_id" name="shared_user_id"
                             value="{{ view_shared_user_id }}"
@@ -117,7 +125,7 @@
         </div>
 
         <!-- Lista de Tareas -->
-        <h2 class="text-2xl font-semibold text-gray-700 mb-4">Tareas de: {{ display_user_id }}</h2>
+        <h2 class="text-2xl font-semibold text-gray-700 mb-4">{{ display_user_id_for_title }}</h2>
         {% if tasks %}
             <div class="space-y-4">
                 {% for task in tasks %}
@@ -133,12 +141,17 @@
                                 </span>
                             </p>
                             <p class="text-sm text-gray-500 mt-2">
-                                Creado por: {{ 'Tú' if task.createdBy == current_user_id else task.createdBy }}
+                                Creado por:
+                                {% if task.createdBy == current_user.id %}
+                                    Tú
+                                {% else %}
+                                    {{ task.createdByUsername if task.createdByUsername else task.createdBy }}
+                                {% endif %}
                                 ({{ 'Público' if task.isPublic == 1 else 'Privado' }})
                             </p>
                         </div>
                         <!-- Botones de acción, solo visibles si son tareas del usuario actual y no se están viendo tareas de otro -->
-                        {% if not is_viewing_others_tasks and task.createdBy == current_user_id %}
+                        {% if not is_viewing_others_tasks and task.createdBy == current_user.id %}
                             <div class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 w-full md:w-auto">
                                 {% if task.status == 'pending' %}
                                     <a href="{{ url_for('complete_task', task_id=task.id) }}"
@@ -174,26 +187,42 @@
         function applyFilters() {
             const statusFilter = document.getElementById('status_filter').value;
             const sortBy = document.getElementById('sort_by').value;
-            const sharedUserId = document.getElementById('shared_user_id').value;
-            let url = `/?status_filter=<span class="math-inline">\{statusFilter\}&sort\_by\=</span>{sortBy}`;
-            if (sharedUserId) {
-                url += `&view_shared_user_id=${sharedUserId}`;
+            const sharedUserIdInput = document.getElementById('shared_user_id');
+            const viewMode = document.getElementById('view_mode').value; // 'my_tasks' or 'shared_tasks'
+            
+            let url = `/?status_filter=${statusFilter}&sort_by=${sortBy}`;
+            
+            if (viewMode === 'shared_tasks' && sharedUserIdInput && sharedUserIdInput.value.trim() !== '') {
+                url += `&view_shared_user_id=${sharedUserIdInput.value.trim()}`;
             }
             window.location.href = url;
         }
 
         // Función para aplicar el filtro de usuario compartido
         function applySharedUserFilter() {
+            const sharedUserIdInput = document.getElementById('shared_user_id');
+            if (sharedUserIdInput.value.trim() === '') {
+                alert('Por favor, introduce un ID de usuario para ver tareas compartidas.');
+                return;
+            }
             document.getElementById('view_mode').value = 'shared_tasks';
             applyFilters();
         }
 
-        // Ocultar el grupo de ID de usuario compartido si la vista es "Mis Tareas" al cargar
+        // Ocultar/mostrar el grupo de ID de usuario compartido al cambiar el modo de vista
         document.addEventListener('DOMContentLoaded', () => {
             const viewModeSelect = document.getElementById('view_mode');
             const sharedUserIdGroup = document.getElementById('shared_user_id_group');
-            if (viewModeSelect.value === 'my_tasks') {
+            const currentSharedUserId = "{{ view_shared_user_id }}"; // Valor inicial del backend
+
+            // Si currentSharedUserId está vacío (significa que estamos en "Mis Tareas"), ocultar.
+            // Si tiene un valor, mostrar.
+            if (currentSharedUserId.trim() === '') {
                 sharedUserIdGroup.classList.add('hidden');
+                viewModeSelect.value = 'my_tasks'; // Asegura que el select muestre "Mis Tareas"
+            } else {
+                sharedUserIdGroup.classList.remove('hidden');
+                viewModeSelect.value = 'shared_tasks'; // Asegura que el select muestre "Tareas Compartidas de Otros"
             }
         });
     </script>
