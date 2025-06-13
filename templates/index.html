@@ -66,6 +66,15 @@
                     <label for="is_public" class="ml-2 block text-sm text-gray-900">Compartir públicamente</label>
                 </div>
             </div>
+            <div class="mb-6">
+                <label for="assigned_users" class="block text-sm font-medium text-gray-700 mb-1">Asignar a Usuarios (Ctrl/Cmd + clic para seleccionar varios):</label>
+                <select id="assigned_users" name="assigned_users" multiple
+                        class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm h-32">
+                    {% for user in all_users %}
+                        <option value="{{ user.id }}" {% if user.id == current_user.id %}selected{% endif %}>{{ user.username }} (ID: {{ user.id }})</option>
+                    {% endfor %}
+                </select>
+            </div>
             <button type="submit"
                     class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md shadow-md transition duration-300 ease-in-out">
                 Añadir Tarea
@@ -81,8 +90,8 @@
                     <select id="view_mode"
                             class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                             onchange="if(this.value === 'my_tasks') { window.location.href = '{{ url_for('index', status_filter=status_filter, sort_by=sort_by) }}'; } else { document.getElementById('shared_user_id_group').classList.remove('hidden'); }">
-                        <option value="my_tasks" {% if not view_shared_user_id %}selected{% endif %}>Mis Tareas</option>
-                        <option value="shared_tasks" {% if view_shared_user_id %}selected{% endif %}>Tareas Compartidas de Otros</option>
+                        <option value="my_tasks" {% if not view_shared_user_id %}selected{% endif %}>Mis Tareas (Creadas o Asignadas a mí)</option>
+                        <option value="shared_tasks" {% if view_shared_user_id %}selected{% endif %}>Tareas Públicas de Otro Usuario</option>
                     </select>
                 </div>
                 <div id="shared_user_id_group" class="{% if not view_shared_user_id %}hidden{% endif %} md:col-span-2">
@@ -125,7 +134,7 @@
         </div>
 
         <!-- Lista de Tareas -->
-        <h2 class="text-2xl font-semibold text-gray-700 mb-4">{{ display_user_id_for_title }}</h2>
+        <h2 class="text-2xl font-semibold text-gray-700 mb-4">{{ display_user_info }}</h2>
         {% if tasks %}
             <div class="space-y-4">
                 {% for task in tasks %}
@@ -149,6 +158,21 @@
                                 {% endif %}
                                 ({{ 'Público' if task.isPublic == 1 else 'Privado' }})
                             </p>
+                            <p class="text-sm text-gray-500 mt-1">Asignada a:
+                                {% if task.assigned_users %}
+                                    {% for assigned_user in task.assigned_users %}
+                                        {{ assigned_user.username }}{% if not loop.last %}, {% endif %}
+                                    {% endfor %}
+                                {% else %}
+                                    Nadie
+                                {% endif %}
+                            </p>
+                            {% if task.completed_photo_url %}
+                                <div class="mt-4">
+                                    <p class="text-sm font-medium text-gray-700">Foto de Tarea Realizada:</p>
+                                    <img src="{{ task.completed_photo_url }}" alt="Tarea Realizada" class="mt-2 rounded-md shadow-md max-w-full h-auto object-cover" onerror="this.onerror=null;this.src='https://placehold.co/300x200/cccccc/333333?text=No+Disponible';">
+                                </div>
+                            {% endif %}
                         </div>
                         <!-- Botones de acción, solo visibles si son tareas del usuario actual y no se están viendo tareas de otro -->
                         {% if not is_viewing_others_tasks and task.createdBy == current_user.id %}
