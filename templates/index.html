@@ -67,7 +67,7 @@
                 </div>
             </div>
             <div class="mb-6">
-                <label for="assigned_users" class="block text-sm font-medium text-gray-700 mb-1">Asignar a Usuarios (Ctrl + clic para seleccionar varios):</label>
+                <label for="assigned_users" class="block text-sm font-medium text-gray-700 mb-1">Asignar a Usuarios (Ctrl/Cmd + clic para seleccionar varios):</label>
                 <select id="assigned_users" name="assigned_users" multiple
                         class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm h-32">
                     {% for user in all_users %}
@@ -88,7 +88,7 @@
                 <div>
                     <label for="view_mode" class="block text-sm font-medium text-gray-700 mb-1">Ver Tareas:</label>
                     <select id="view_mode"
-                            class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                            class="mt-1 block w-full md:w-auto px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                             onchange="if(this.value === 'my_tasks') { window.location.href = '{{ url_for('index', status_filter=status_filter, sort_by=sort_by) }}'; } else { document.getElementById('shared_user_id_group').classList.remove('hidden'); }">
                         <option value="my_tasks" {% if not view_shared_user_id %}selected{% endif %}>Mis Tareas (Creadas o Asignadas a mí)</option>
                         <option value="shared_tasks" {% if view_shared_user_id %}selected{% endif %}>Tareas Públicas de Otro Usuario</option>
@@ -151,10 +151,10 @@
                             </p>
                             <p class="text-sm text-gray-500 mt-2">
                                 Creado por:
-                                {% if task.createdBy == current_user.id %}
+                                {% if task.createdby == current_user.id %} {# CAMBIO AQUÍ: task.createdby #}
                                     Tú
                                 {% else %}
-                                    {{ task.createdByUsername if task.createdByUsername else task.createdBy }}
+                                    {{ task.createdByUsername if task.createdByUsername else task.createdby }} {# CAMBIO AQUÍ: task.createdby #}
                                 {% endif %}
                                 ({{ 'Público' if task.isPublic == 1 else 'Privado' }})
                             </p>
@@ -175,7 +175,8 @@
                             {% endif %}
                         </div>
                         <!-- Botones de acción, solo visibles si son tareas del usuario actual y no se están viendo tareas de otro -->
-                        {% if not is_viewing_others_tasks and task.createdBy == current_user.id %}
+                        {# CAMBIO AQUÍ: task.createdby #}
+                        {% if not is_viewing_others_tasks and task.createdby == current_user.id %}
                             <div class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 w-full md:w-auto">
                                 {% if task.status == 'pending' %}
                                     <a href="{{ url_for('complete_task', task_id=task.id) }}"
