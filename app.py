@@ -241,18 +241,36 @@ def index():
 
     tasks = []
     for task in tasks_raw:
-        task_dict = dict(task)
+        task_dict = dict(task) # Convertir DictRow a dict
         task_dict['assigned_users'] = assigned_users_map.get(task['id'], [])
 
-        # --- AÑADIR ESTAS LÍNEAS PARA DEBUGGING ---
-        print(f"DEBUG: Task ID: {task_dict['id']}")
-        print(f"DEBUG: Task createdBy: {task_dict['createdBy']} (Type: {type(task_dict['createdBy'])})")
-        print(f"DEBUG: Current User ID: {current_user.id} (Type: {type(current_user.id)})")
-        print(f"DEBUG: current_user.id as int: {int(current_user.id)} (Type: {type(int(current_user.id))})")
-        print(f"DEBUG: is_viewing_others_tasks: {is_viewing_others_tasks}")
-        print(f"DEBUG: Condition (not is_viewing_others_tasks and task.createdBy == int(current_user.id)): "
-              f"{not is_viewing_others_tasks and task_dict['createdBy'] == int(current_user.id)}")
-        # --- FIN DE LAS LÍNEAS DE DEBUGGING COMPLETADO ---
+        # --- LÍNEAS DE DEBUGGING MEJORADAS ---
+        task_id_debug = task_dict.get('id', 'ID_MISSING')
+        # Usamos .get() para evitar KeyError si 'createdBy' no está presente
+        created_by_debug = task_dict.get('createdBy', 'KEY_MISSING_OR_NULL') 
+        current_user_id_debug = current_user.id
+        is_viewing_others_tasks_debug = is_viewing_others_tasks
+        
+        print(f"DEBUG: Task ID: {task_id_debug}")
+        print(f"DEBUG: Raw task object keys from DB: {list(task.keys())}") # Muestra las claves reales del objeto DictRow
+        print(f"DEBUG: Task createdBy: {created_by_debug} (Type: {type(created_by_debug)})")
+        print(f"DEBUG: Current User ID: {current_user_id_debug} (Type: {type(current_user_id_debug)})")
+        print(f"DEBUG: is_viewing_others_tasks: {is_viewing_others_tasks_debug}")
+        
+        condition_result = False
+        if created_by_debug != 'KEY_MISSING_OR_NULL' and created_by_debug is not None:
+            try:
+                # Asegurarse de que ambos sean int para la comparación
+                condition_result = (not is_viewing_others_tasks_debug and int(created_by_debug) == int(current_user_id_debug))
+                print(f"DEBUG: Task createdBy as int: {int(created_by_debug)}")
+                print(f"DEBUG: current_user.id as int: {int(current_user_id_debug)}")
+                print(f"DEBUG: Condition (not is_viewing_others_tasks and task.createdBy == int(current_user.id)): {condition_result}")
+            except ValueError:
+                print(f"DEBUG: ERROR: Could not convert Task createdBy ('{created_by_debug}') to int.")
+                print(f"DEBUG: Condition (not is_viewing_others_tasks and task.createdBy == int(current_user.id)): False (Conversion Error)")
+        else:
+            print(f"DEBUG: Condition (not is_viewing_others_tasks and task.createdBy == int(current_user.id)): False (createdBy Missing or Null)")
+        # --- FIN DE LAS LÍNEAS DE DEBUGGING ---
 
         tasks.append(task_dict)
 
