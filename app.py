@@ -252,7 +252,7 @@ def index():
         print(f"DEBUG: is_viewing_others_tasks: {is_viewing_others_tasks}")
         print(f"DEBUG: Condition (not is_viewing_others_tasks and task.createdBy == int(current_user.id)): "
               f"{not is_viewing_others_tasks and task_dict['createdBy'] == int(current_user.id)}")
-        # --- FIN DE LAS LÍNEAS DE DEBUGGING ---
+        # --- FIN DE LAS LÍNEAS DE DEBUGGING COMPLETADO ---
 
         tasks.append(task_dict)
 
