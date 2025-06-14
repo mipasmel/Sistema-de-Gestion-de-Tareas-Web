@@ -178,7 +178,7 @@ def login():
         if user_data: # and check_password_hash(user_data['password_hash'], password): # Esto ya no se verifica
             user = User(user_data['id'], user_data['username'], user_data['password_hash'])
             login_user(user)
-            flash('Inicio de sesión exitoso (sin contraseña).', 'success')
+            flash('Inicio de sesión exitoso.', 'success')
             return redirect(url_for('index'))
         else:
             flash('Nombre de usuario incorrecto.', 'error') # Mensaje ajustado
@@ -405,7 +405,7 @@ def update_task(task_id):
         # Obtener usuarios asignados desde el formulario
         assigned_user_ids = request.form.getlist('assigned_users')
         if not assigned_user_ids:
-            assigned_user_ids = [str(current_user.id)] # Si no se selecciona ninguno, asignar al creador por defecto
+            assigned_user_ids = [str(current_user.id)] # Si no se selecciona ninguno, se asigna al creador por defecto
 
 
         if not task_description:
