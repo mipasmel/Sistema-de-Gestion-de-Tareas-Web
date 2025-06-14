@@ -244,16 +244,16 @@ def index():
         task_dict = dict(task) # Convertir DictRow a dict
         task_dict['assigned_users'] = assigned_users_map.get(task['id'], [])
 
-        # --- LÍNEAS DE DEBUGGING MEJORADAS ---
+        # --- LÍNEAS DE DEBUGGING MEJORADAS CON 'createdby' ---
         task_id_debug = task_dict.get('id', 'ID_MISSING')
-        # Usamos .get() para evitar KeyError si 'createdBy' no está presente
-        created_by_debug = task_dict.get('createdBy', 'KEY_MISSING_OR_NULL') 
+        # Usamos .get() para evitar KeyError y accedemos a 'createdby' (minúsculas)
+        created_by_debug = task_dict.get('createdby', 'KEY_MISSING_OR_NULL') 
         current_user_id_debug = current_user.id
         is_viewing_others_tasks_debug = is_viewing_others_tasks
         
         print(f"DEBUG: Task ID: {task_id_debug}")
         print(f"DEBUG: Raw task object keys from DB: {list(task.keys())}") # Muestra las claves reales del objeto DictRow
-        print(f"DEBUG: Task createdBy: {created_by_debug} (Type: {type(created_by_debug)})")
+        print(f"DEBUG: Task createdby: {created_by_debug} (Type: {type(created_by_debug)})") # Cambiado a createdby
         print(f"DEBUG: Current User ID: {current_user_id_debug} (Type: {type(current_user_id_debug)})")
         print(f"DEBUG: is_viewing_others_tasks: {is_viewing_others_tasks_debug}")
         
@@ -262,14 +262,14 @@ def index():
             try:
                 # Asegurarse de que ambos sean int para la comparación
                 condition_result = (not is_viewing_others_tasks_debug and int(created_by_debug) == int(current_user_id_debug))
-                print(f"DEBUG: Task createdBy as int: {int(created_by_debug)}")
+                print(f"DEBUG: Task createdby as int: {int(created_by_debug)}") # Cambiado a createdby
                 print(f"DEBUG: current_user.id as int: {int(current_user_id_debug)}")
-                print(f"DEBUG: Condition (not is_viewing_others_tasks and task.createdBy == int(current_user.id)): {condition_result}")
+                print(f"DEBUG: Condition (not is_viewing_others_tasks and task.createdby == int(current_user.id)): {condition_result}") # Cambiado a createdby
             except ValueError:
-                print(f"DEBUG: ERROR: Could not convert Task createdBy ('{created_by_debug}') to int.")
-                print(f"DEBUG: Condition (not is_viewing_others_tasks and task.createdBy == int(current_user.id)): False (Conversion Error)")
+                print(f"DEBUG: ERROR: Could not convert Task createdby ('{created_by_debug}') to int.") # Cambiado a createdby
+                print(f"DEBUG: Condition (not is_viewing_others_tasks and task.createdby == int(current_user.id)): False (Conversion Error)") # Cambiado a createdby
         else:
-            print(f"DEBUG: Condition (not is_viewing_others_tasks and task.createdBy == int(current_user.id)): False (createdBy Missing or Null)")
+            print(f"DEBUG: Condition (not is_viewing_others_tasks and task.createdby == int(current_user.id)): False (createdby Missing or Null)") # Cambiado a createdby
         # --- FIN DE LAS LÍNEAS DE DEBUGGING ---
 
         tasks.append(task_dict)
@@ -341,7 +341,8 @@ def add_task():
 def edit_task(task_id):
     db = get_db()
     cursor = db.cursor()
-    cursor.execute('SELECT id, task_description, status, due_date, priority, createdBy, isPublic, completed_photo_url FROM tasks WHERE id = %s AND createdBy = %s', (task_id, int(current_user.id)))
+    # Cambiado a 'createdby'
+    cursor.execute('SELECT id, task_description, status, due_date, priority, createdBy, isPublic, completed_photo_url FROM tasks WHERE id = %s AND createdby = %s', (task_id, int(current_user.id)))
     task = cursor.fetchone()
     cursor.close()
     if task is None:
@@ -391,7 +392,8 @@ def update_task(task_id):
         cursor.execute('SELECT createdBy FROM tasks WHERE id = %s', (task_id,))
         task = cursor.fetchone()
         
-        if task and task['createdBy'] == int(current_user.id):
+        # Cambiado a 'createdby'
+        if task and task['createdby'] == int(current_user.id): 
             cursor.execute('UPDATE tasks SET task_description = %s, due_date = %s, priority = %s, status = %s, isPublic = %s, completed_photo_url = %s WHERE id = %s',
                            (task_description, due_date, priority, status, is_public, completed_photo_url, task_id))
             
@@ -420,7 +422,8 @@ def complete_task(task_id):
     cursor.execute('SELECT createdBy FROM tasks WHERE id = %s', (task_id,))
     task = cursor.fetchone()
 
-    if task and task['createdBy'] == int(current_user.id):
+    # Cambiado a 'createdby'
+    if task and task['createdby'] == int(current_user.id): 
         cursor.execute('UPDATE tasks SET status = %s WHERE id = %s', ('completed', task_id))
         db.commit()
         flash('Tarea marcada como completada.', 'success')
@@ -437,7 +440,8 @@ def delete_task(task_id):
     cursor.execute('SELECT createdBy FROM tasks WHERE id = %s', (task_id,))
     task = cursor.fetchone()
 
-    if task and task['createdBy'] == int(current_user.id):
+    # Cambiado a 'createdby'
+    if task and task['createdby'] == int(current_user.id): 
         cursor.execute('DELETE FROM task_assignments WHERE task_id = %s', (task_id,))
         cursor.execute('DELETE FROM tasks WHERE id = %s', (task_id,))
         db.commit()
@@ -455,7 +459,8 @@ def toggle_public_status(task_id):
     cursor.execute('SELECT createdBy, isPublic FROM tasks WHERE id = %s', (task_id,))
     task = cursor.fetchone()
 
-    if task and task['createdBy'] == int(current_user.id):
+    # Cambiado a 'createdby'
+    if task and task['createdby'] == int(current_user.id): 
         new_public_status = 1 if task['isPublic'] == 0 else 0
         cursor.execute('UPDATE tasks SET isPublic = %s WHERE id = %s', (new_public_status, task_id))
         db.commit()
