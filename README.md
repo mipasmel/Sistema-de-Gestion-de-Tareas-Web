@@ -14,7 +14,6 @@ Un robusto sistema de gestión de tareas basado en la web, desarrollado con Pyth
   
 ## 🌐 Uso
 ## 🤝 Contribuciones
-## 📄 Licencia
 
 # ✨ Descripción
 Esta aplicación web es un completo sistema de gestión de tareas que aprovecha la potencia de PostgreSQL para el almacenamiento de datos. Ofrece una solución sencilla pero efectiva para organizar tus tareas pendientes, permitiendo operaciones CRUD (Crear, Leer, Actualizar, Eliminar) sobre las tareas. Además, incorpora funcionalidades para asignar tareas a múltiples usuarios y adjuntar una URL de foto cuando una tarea ha sido completada. Es ideal para aprender sobre el desarrollo web con Flask, la interacción con bases de datos relacionales avanzadas como PostgreSQL, y la construcción de interfaces de usuario robustas.
@@ -143,8 +142,4 @@ Empuja la rama a tu "fork" (git push origin feature/nombre-de-la-caracteristica)
 
 Abre un "Pull Request" a la rama main de este repositorio.
 
-
-# 📄 Licencia
-
-Este proyecto está bajo la Licencia MIT. Consulta el archivo LICENSE para más detalles.
 
