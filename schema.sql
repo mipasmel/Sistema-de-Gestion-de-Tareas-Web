@@ -7,24 +7,22 @@ DROP TABLE IF EXISTS task_assignments;
 DROP TABLE IF EXISTS tasks;
 DROP TABLE IF EXISTS users;
 
--- 1. Tabla de Usuarios (No hay cambios estructurales aquí, el cambio es en app.py para no requerir contraseña)
 CREATE TABLE users (
     id SERIAL PRIMARY KEY, -- SERIAL para autoincremento en PostgreSQL
     username TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL -- Se mantiene para compatibilidad con Flask-Login, aunque no se use para validar
 );
 
--- 2. Tabla de Tareas (Se añade la columna 'completed_photo_url')
 CREATE TABLE tasks (
     id SERIAL PRIMARY KEY, -- SERIAL para autoincremento en PostgreSQL
     task_description TEXT NOT NULL,
     status TEXT DEFAULT 'pending' NOT NULL,
     due_date TEXT,
     priority TEXT DEFAULT 'Baja' NOT NULL,
-    createdBy INTEGER NOT NULL, -- ID del usuario que creó la tarea
-    isPublic INTEGER DEFAULT 0 NOT NULL, -- 0 para privado, 1 para público
-    completed_photo_url TEXT, -- NUEVA COLUMNA: para la URL de la foto de la tarea realizada
-    FOREIGN KEY (createdBy) REFERENCES users(id) ON DELETE CASCADE
+    created_by INTEGER NOT NULL, -- ID del usuario que creó la tarea
+    is_public INTEGER DEFAULT 0 NOT NULL, -- 0 para privado, 1 para público
+    completed_photo_url TEXT, 
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- 3. NUEVA TABLA: task_assignments (para asignaciones de muchos a muchos)
